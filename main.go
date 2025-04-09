@@ -1,15 +1,9 @@
 package main
 
 import (
-	"net/http"
-
-	"github.com/gin-gonic/gin"
+	"ady-trans-jaya-golang/internal/db"
 )
 
 func main() {
-	r := gin.Default()
-	r.GET("/ping", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"message": "cihuy"})
-	})
-	r.Run()
+	db.Connect()
 }
