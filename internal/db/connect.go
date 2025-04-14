@@ -12,7 +12,7 @@ import (
 
 var DB *gorm.DB
 
-func Connect() {
+func Connect() (*gorm.DB, error) {
 	err := godotenv.Load()
 	if err != nil {
 		log.Println(".env file not found")
@@ -20,9 +20,9 @@ func Connect() {
 
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable Timezone=Asia/Jakarta",
 		getEnv("DB_HOST", "localhost"),
-		getEnv("DB_USER", "postgres"), 
-		getEnv("DB_PASSWORD", "MUHLESS717GG"), 
-		getEnv("DB_NAME", "ady-trans-jaya"), 
+		getEnv("DB_USER", "postgres"),
+		getEnv("DB_PASSWORD", "MUHLESS717GG"),
+		getEnv("DB_NAME", "ady-trans-jaya"),
 		getEnv("DB_PORT", "5432"),
 	)
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
@@ -30,7 +30,7 @@ func Connect() {
 		log.Fatalf("Failed connect to Database: %v", err)
 	}
 	fmt.Println("Succesfully connect to Database")
-	DB = db
+	return db, nil
 }
 
 func getEnv(key, fallback string) string {
