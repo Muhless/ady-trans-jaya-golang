@@ -8,8 +8,8 @@ import (
 	"gorm.io/gorm"
 )
 
-func RegisterDriverRoutes(router *gin.Engine, db *gorm.DB) {
-	router.GET("/api/driver", func(ctx *gin.Context) {
+func RegisterDriverRoutes(r *gin.Engine, db *gorm.DB) {
+	r.GET("/api/driver", func(ctx *gin.Context) {
 		var driver []model.Driver
 		if err := db.Find(&driver).Error; err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve drivers data"})
@@ -18,7 +18,7 @@ func RegisterDriverRoutes(router *gin.Engine, db *gorm.DB) {
 		ctx.JSON(http.StatusOK, gin.H{"message": driver})
 	})
 
-	router.POST("/api/driver", func(ctx *gin.Context) {
+	r.POST("/api/driver", func(ctx *gin.Context) {
 		var driver model.Driver
 		if err := ctx.ShouldBindBodyWithJSON(&driver); err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
