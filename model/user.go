@@ -1,9 +1,15 @@
 package model
 
-import "gorm.io/gorm"
+type Role string
+
+const (
+	Owner Role = "owner"
+	Admin Role = "admin"
+)
 
 type User struct {
-	gorm.Model
-	Name string
-	Email string
+	ID       int    `json:"id"`
+	Username string `json:"username"`
+	Role     Role   `json:"role"`
+	Password string `json:"password"`
 }
