@@ -19,6 +19,7 @@ func Connect() (*gorm.DB, error) {
 	}
 
 	dsn := os.Getenv("DATABASE_URL")
+
 	if dsn == "" {
 		dsn = fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable Timezone=Asia/Jakarta",
 			getEnv("DB_HOST", "localhost"),
