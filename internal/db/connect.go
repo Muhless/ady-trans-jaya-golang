@@ -18,13 +18,16 @@ func Connect() (*gorm.DB, error) {
 		log.Println(".env file not found")
 	}
 
-	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable Timezone=Asia/Jakarta",
-		getEnv("DB_HOST", "localhost"),
-		getEnv("DB_USER", "postgres"),
-		getEnv("DB_PASSWORD", "MUHLESS717GG"),
-		getEnv("DB_NAME", "ady-trans-jaya"),
-		getEnv("DB_PORT", "5432"),
-	)
+	dsn := os.Getenv("DATABASE_URL")
+	if dsn == "" {
+		dsn = fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable Timezone=Asia/Jakarta",
+			getEnv("DB_HOST", "localhost"),
+			getEnv("DB_USER", "postgres"),
+			getEnv("DB_PASSWORD", "MUHLESS717GG"),
+			getEnv("DB_NAME", "ady-trans-jaya"),
+			getEnv("DB_PORT", "5432"),
+		)
+	}
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatalf("Failed connect to Database: %v", err)
