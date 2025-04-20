@@ -19,27 +19,14 @@ func Connect() (*gorm.DB, error) {
 	}
 
 	dsn := os.Getenv("DATABASE_URL")
-
 	if dsn == "" {
-		dsn = fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable Timezone=Asia/Jakarta",
-			getEnv("DB_HOST", "localhost"),
-			getEnv("DB_USER", "postgres"),
-			getEnv("DB_PASSWORD", "MUHLESS717GG"),
-			getEnv("DB_NAME", "ady-trans-jaya"),
-			getEnv("DB_PORT", "5432"),
-		)
+		log.Fatal("DATABASE_URL is not set")
 	}
+
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatalf("Failed connect to Database: %v", err)
 	}
-	fmt.Println("Succesfully connect to Database")
+	fmt.Println("Successfully connected to Database")
 	return db, nil
-}
-
-func getEnv(key, fallback string) string {
-	if value, exists := os.LookupEnv(key); exists {
-		return value
-	}
-	return fallback
 }
