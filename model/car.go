@@ -8,11 +8,10 @@ const (
 )
 
 type Car struct {
-	ID           int     `json:"ID"`
-	Name         string  `json:"name"`
-	Type         string  `json:"type"`
-	LicensePlate string  `json:"license_plate"`
-	Price        float64 `json:"price"`
-	Status       Status  `json:"status"`
-	
+	ID          int     `json:"id"`
+	Name        string  `json:"name"`
+	Type        string  `json:"type"`
+	LicensePlat string  `json:"license_plat"`
+	Price       float64 `json:"price"`
+	Status      Status  `json:"status"`
 }

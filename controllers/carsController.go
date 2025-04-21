@@ -2,6 +2,9 @@ package controllers
 
 import (
 	"ady-trans-jaya-golang/model"
+	"bytes"
+	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -20,7 +23,13 @@ func CarsControllers(r *gin.Engine, db *gorm.DB) {
 
 	r.POST("/api/cars", func(ctx *gin.Context) {
 		var cars model.Car
-		if err := ctx.ShouldBind(&cars); err != nil {
+
+		body, _ := io.ReadAll(ctx.Request.Body)
+		fmt.Println("📥 Raw Body:", string(body))
+		ctx.Request.Body = io.NopCloser(bytes.NewBuffer(body))
+
+		if err := ctx.ShouldBindJSON(&cars); err != nil {
+			fmt.Println("❌ Error binding:", err.Error())
 			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
