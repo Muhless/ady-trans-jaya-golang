@@ -1,8 +1,8 @@
 package main
 
 import (
-	"ady-trans-jaya-golang/internal/db"
-	"ady-trans-jaya-golang/routes"
+	"ady-trans-jaya-golang/controllers"
+	"ady-trans-jaya-golang/db"
 	"log"
 
 	"github.com/gin-contrib/cors"
@@ -17,6 +17,7 @@ func main() {
 
 	r := gin.Default()
 	r.Use(cors.Default())
-	routes.RegisterDriverRoutes(r, db)
+	controllers.RegisterDriverRoutes(r, db)
+	controllers.CarsControllers(r, db)
 	r.Run(":8080")
 }

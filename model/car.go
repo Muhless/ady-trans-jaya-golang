@@ -14,4 +14,5 @@ type Car struct {
 	LicensePlate string  `json:"license_plate"`
 	Price        float64 `json:"price"`
 	Status       Status  `json:"status"`
+	
 }

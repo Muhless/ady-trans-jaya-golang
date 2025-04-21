@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS drivers;
+
+DROP TYPE IF EXISTS driver_status;

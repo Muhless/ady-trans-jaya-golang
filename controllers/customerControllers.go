@@ -1,4 +1,4 @@
-package routes
+package controllers
 
 import (
 	"ady-trans-jaya-golang/model"
