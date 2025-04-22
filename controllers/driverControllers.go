@@ -8,7 +8,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func RegisterDriverRoutes(r *gin.Engine, db *gorm.DB) {
+func DriversControllers(r *gin.Engine, db *gorm.DB) {
 	r.GET("/api/driver", func(ctx *gin.Context) {
 		var driver []model.Driver
 		if err := db.Find(&driver).Error; err != nil {

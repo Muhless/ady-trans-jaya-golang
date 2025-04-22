@@ -17,7 +17,8 @@ func main() {
 
 	r := gin.Default()
 	r.Use(cors.Default())
-	controllers.RegisterDriverRoutes(r, db)
-	controllers.CarsControllers(r, db)
+	controllers.DriversControllers(r, db)
+	controllers.VehicleControllers(r, db)
+	controllers.CustomersControllers(r, db)
 	r.Run(":8080")
 }
