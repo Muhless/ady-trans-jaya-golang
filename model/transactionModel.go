@@ -12,13 +12,14 @@ const (
 )
 
 const (
+	TransactionStatusWaiting   TransactionStatus = "menunggu persetujuan"
 	TransactionStatusOngoing   TransactionStatus = "sedang berlangsung"
 	TransactionStatusCompleted TransactionStatus = "selesai"
 	TransactionStatusFailed    TransactionStatus = "dibatalkan"
 )
 
 type Transaction struct {
-	ID                int               `json:"id"`
+	ID                int               `json:"id" gorm:"primaryKey"`
 	CustomerID        int               `json:"customer_id"`
 	Customer          Customer          `json:"customer"`
 	TotalDelivery     uint8             `json:"total_delivery"`
@@ -34,6 +35,6 @@ type Transaction struct {
 	FullPaymentProof  string            `json:"full_payment_proof"`
 	TransactionStatus TransactionStatus `json:"transaction_status"`
 	DeliveryID        []Delivery        `json:"delivery,omitempty"`
-	CreatedAt         time.Time         `json:"created_at"`
-	UpdatedAt         time.Time         `json:"updated_at"`
+	CreatedAt         time.Time         `json:"created_at" gorm:"autoCreateTime"`
+	UpdatedAt         time.Time         `json:"updated_at" gorm:"autoUpdateTime"`
 }

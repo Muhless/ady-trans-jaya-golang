@@ -18,7 +18,7 @@ func VehicleControllers(r *gin.Engine, db *gorm.DB) {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve vehicle data"})
 			return
 		}
-		ctx.JSON(http.StatusOK, gin.H{"message": vehicle})
+		ctx.JSON(http.StatusOK, gin.H{"data": vehicle})
 	})
 
 	r.POST("/api/vehicle", func(ctx *gin.Context) {

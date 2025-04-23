@@ -3,7 +3,7 @@ package model
 import "time"
 
 type DeliveryReceipt struct {
-	ID             int       `json:"id"`
+	ID             int       `json:"id" gorm:"primaryKey"`
 	DeliveryID     int       `json:"delivery_id"`
 	ReceiptNumber  string    `json:"receipt_number"`
 	IssuedDate     time.Time `json:"issued_date"`
@@ -11,6 +11,6 @@ type DeliveryReceipt struct {
 	CarPlateNumber string    `json:"car_plate_number"`
 	ReceiverName   string    `json:"receiver_name"`
 	ReceiverNote   string    `json:"receiver_note,omitempty"`
-	CreatedAt      time.Time `json:"created_at"`
-	UpdatedAt      time.Time `json:"updated_at"`
+	CreatedAt      time.Time `json:"created_at" gorm:"autoCreateTime"`
+	UpdatedAt      time.Time `json:"updated_at" gorm:"autoUpdateTime"`
 }

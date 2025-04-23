@@ -9,7 +9,7 @@ import (
 )
 
 func CustomersControllers(r *gin.Engine, db *gorm.DB) {
-	r.GET("/api/customers", func(ctx *gin.Context) {
+	r.GET("/api/customer", func(ctx *gin.Context) {
 		var customer []model.Customer
 		if err := db.Find(&customer).Error; err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve customers data"})
@@ -18,7 +18,7 @@ func CustomersControllers(r *gin.Engine, db *gorm.DB) {
 		ctx.JSON(http.StatusOK, gin.H{"data": customer})
 	})
 
-	r.POST("/api/customers", func(ctx *gin.Context) {
+	r.POST("/api/customer", func(ctx *gin.Context) {
 		var customer model.Customer
 
 		if err := ctx.ShouldBindJSON(&customer); err != nil {

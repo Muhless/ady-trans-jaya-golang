@@ -15,7 +15,7 @@ func DriversControllers(r *gin.Engine, db *gorm.DB) {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve drivers data"})
 			return
 		}
-		ctx.JSON(http.StatusOK, gin.H{"message": driver})
+		ctx.JSON(http.StatusOK, gin.H{"data": driver})
 	})
 
 	r.GET("api/driver/:id", func(ctx *gin.Context) {

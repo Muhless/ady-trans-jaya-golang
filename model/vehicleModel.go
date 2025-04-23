@@ -8,7 +8,7 @@ const (
 )
 
 type Vehicle struct {
-	ID          int     `json:"id"`
+	ID          int     `json:"id" gorm:"primaryKey"`
 	Name        string  `json:"name"`
 	Type        string  `json:"type"`
 	LicensePlat string  `json:"license_plat"`
