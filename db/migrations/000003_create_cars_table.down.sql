@@ -1,4 +1,0 @@
-DROP TABLE IF EXISTS cars;
-
-DROP TYPE IF EXISTS car_type;
-DROP TYPE IF EXISTS car_status;

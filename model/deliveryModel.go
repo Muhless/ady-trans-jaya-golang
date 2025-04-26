@@ -13,32 +13,24 @@ const (
 	DeliveryStatusCancelled   DeliveryStatus = "dibatalkan"
 )
 
-type VolumeUnit string
-
-const (
-	UnitKilogram VolumeUnit = "kg"
-	UnitTon      VolumeUnit = "ton"
-	UnitCubicM   VolumeUnit = "m3"
-	UnitLiter    VolumeUnit = "liter"
-)
-
 type Delivery struct {
 	ID                   int            `json:"id" gorm:"primaryKey"`
 	TransactionID        int            `json:"transaction_id"`
 	DriverID             int            `json:"driver_id"`
-	Driver               Driver         `json:"driver"`
+	Driver               Driver         `json:"driver" gorm:"foreignKey:DriverID"`
 	VehicleID            int            `json:"vehicle_id"`
-	Vehicle              Vehicle        `json:"vehicle"`
-	Content              string         `json:"content"`
-	Volume               float64        `json:"volume"`
-	VolumeUnit           VolumeUnit     `json:"volume_unit"`
-	AddressFrom          string         `json:"address_from"`
-	AddressTo            string         `json:"address_to"`
+	Vehicle              Vehicle        `json:"vehicle" gorm:"foreignKey:VehicleID"`
+	LoadType             string         `json:"load_type"`
+	Load                 string         `json:"load"`
+	Quantity             float64        `json:"quantity"`
+	Weight               string         `json:"weight"`
+	PickupLocation       string         `json:"pickup_location"`
+	Destination          string         `json:"destination"`
 	DeliveryDate         time.Time      `json:"delivery_date"`
 	DeliveryDeadlineDate time.Time      `json:"delivery_deadline_date"`
 	DeliveryStatus       DeliveryStatus `json:"delivery_status"`
-	Total                float64        `json:"total"`
-	ApprovedAt           time.Time      `json:"approved_at"`
+	DeliveryPrice        float64        `json:"delivery_price"`
+	ApprovedAt           *time.Time     `json:"approved_at"`
 	CreatedAt            time.Time      `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt            time.Time      `json:"updated_at" gorm:"autoUpdateTime"`
 }

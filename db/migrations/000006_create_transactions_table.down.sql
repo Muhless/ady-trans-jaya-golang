@@ -1,5 +1,5 @@
-DROP TABLE IF EXISTS transactions;
+DROP TABLE IF EXISTS deliveries;
 
-DROP TYPE IF EXISTS payment_status;
+DROP TYPE IF EXISTS volume_unit;
 
-DROP TYPE IF EXISTS transaction_status;
+DROP TYPE IF EXISTS delivery_status;
