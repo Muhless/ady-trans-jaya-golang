@@ -9,7 +9,7 @@ CREATE TABLE
                     type vehicle_type NOT NULL,
                     license_plate VARCHAR(8) NOT NULL,
                     capacity VARCHAR(15) NOT NULL,
-                    price DECIMAL(10, 2) NOT NULL,
+                    rate_per_km DECIMAL(10, 2) NOT NULL,
                     status vehicle_status DEFAULT 'tersedia',
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
