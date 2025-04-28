@@ -23,7 +23,7 @@ type Transaction struct {
 	CustomerID        int               `json:"customer_id"`
 	Customer          Customer          `json:"customer"`
 	TotalDelivery     uint8             `json:"total_delivery"`
-	Total             float64           `json:"total"`
+	Cost              float64           `json:"cost"`
 	PaymentDeadline   time.Time         `json:"payment_deadline"`
 	DownPayment       float64           `json:"down_payment"`
 	DownPaymentStatus PaymentStatus     `json:"down_payment_status"`

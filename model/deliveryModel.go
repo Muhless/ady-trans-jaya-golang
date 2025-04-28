@@ -22,14 +22,14 @@ type Delivery struct {
 	Vehicle              Vehicle        `json:"vehicle" gorm:"foreignKey:VehicleID"`
 	LoadType             string         `json:"load_type"`
 	Load                 string         `json:"load"`
-	Quantity             float64        `json:"quantity"`
-	Weight               string         `json:"weight"`
+	Quantity             int            `json:"quantity"`
+	Weight               int            `json:"weight"`
 	PickupLocation       string         `json:"pickup_location"`
 	Destination          string         `json:"destination"`
 	DeliveryDate         time.Time      `json:"delivery_date"`
 	DeliveryDeadlineDate time.Time      `json:"delivery_deadline_date"`
 	DeliveryStatus       DeliveryStatus `json:"delivery_status"`
-	DeliveryPrice        float64        `json:"delivery_price"`
+	DeliveryCost         float64        `json:"delivery_cost"`
 	ApprovedAt           *time.Time     `json:"approved_at"`
 	CreatedAt            time.Time      `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt            time.Time      `json:"updated_at" gorm:"autoUpdateTime"`
