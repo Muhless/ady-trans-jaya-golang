@@ -25,6 +25,7 @@ func TransactionController(r *gin.Engine, db *gorm.DB) {
 			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
+
 		if err := db.Create(&transaction).Error; err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save transaction data"})
 			return
