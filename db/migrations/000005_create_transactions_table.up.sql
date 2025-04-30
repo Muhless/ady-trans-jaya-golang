@@ -8,11 +8,9 @@ CREATE TABLE
                     down_payment NUMERIC(15, 2),
                     down_payment_status VARCHAR(20),
                     down_payment_time TIMESTAMP,
-                    down_payment_proof TEXT,
                     full_payment NUMERIC(15, 2),
                     full_payment_status VARCHAR(20),
                     full_payment_time TIMESTAMP,
-                    full_payment_proof TEXT,
                     transaction_status VARCHAR(20),
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
