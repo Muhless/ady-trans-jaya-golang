@@ -10,11 +10,9 @@ CREATE TYPE delivery_status AS ENUM (
 CREATE TABLE
           deliveries (
                     id SERIAL PRIMARY KEY,
-                    transaction_id INTEGER NOT NULL UNIQUE REFERENCES transactions (ID) ON DELETE CASCADE,
-                    driver_id INTEGER NOT NULL UNIQUE REFERENCES drivers (id) ON DELETE CASCADE,
-                    vehicle_id INTEGER NOT NULL UNIQUE REFERENCES vehicles (id) ON DELETE CASCADE load_type VARCHAR(30) NOT NULL,
+                    load_type VARCHAR(30),
                     load VARCHAR(30) NOT NULL,
-                    quantity INTEGER NOT NULL,
+                    quantity VARCHAR(20) NOT NULL,
                     weight INTEGER NOT NULL,
                     pickup_location TEXT NOT NULL,
                     destination TEXT NOT NULL,
@@ -25,4 +23,7 @@ CREATE TABLE
                     approved_at TIMESTAMP,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    transaction_id INTEGER NOT NULL REFERENCES transactions (ID) ON DELETE CASCADE,
+                    driver_id INTEGER NOT NULL REFERENCES drivers (id) ON DELETE CASCADE,
+                    vehicle_id INTEGER NOT NULL REFERENCES vehicles (id) ON DELETE CASCADE
           )

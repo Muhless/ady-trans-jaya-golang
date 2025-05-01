@@ -16,6 +16,7 @@ const (
 type Delivery struct {
 	ID                   int            `json:"id" gorm:"primaryKey"`
 	TransactionID        int            `json:"transaction_id"`
+	Transaction          Transaction    `json:"transaction" gorm:"foreignKey:TransactionID"`
 	DriverID             int            `json:"driver_id"`
 	Driver               Driver         `json:"driver" gorm:"foreignKey:DriverID"`
 	VehicleID            int            `json:"vehicle_id"`

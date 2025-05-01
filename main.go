@@ -21,5 +21,6 @@ func main() {
 	controllers.VehicleControllers(r, db)
 	controllers.CustomersControllers(r, db)
 	controllers.TransactionController(r, db)
+	controllers.DeliveryControllers(r,db)
 	r.Run(":8080")
 }

@@ -1,7 +1,6 @@
 CREATE TABLE
           transactions (
                     id SERIAL PRIMARY KEY,
-                    customer_id INTEGER NOT NULL REFERENCES customers (id) ON DELETE CASCADE,
                     total_delivery INTEGER,
                     cost NUMERIC(15, 2),
                     payment_deadline TIMESTAMP,
@@ -13,5 +12,6 @@ CREATE TABLE
                     full_payment_time TIMESTAMP,
                     transaction_status VARCHAR(20),
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    customer_id INTEGER NOT NULL REFERENCES customers (id) ON DELETE CASCADE
           )
