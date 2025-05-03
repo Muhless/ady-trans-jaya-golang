@@ -25,7 +25,9 @@ type Delivery struct {
 	Load                 string         `json:"load"`
 	Quantity             int            `json:"quantity"`
 	Weight               int            `json:"weight"`
-	PickupLocation       string         `json:"pickup_location"`
+	PickupAddress        string         `json:"pickup_address"`
+	PickupAddressLat     string         `json:"pickup_address_lat"`
+	PickupAddressLang    string         `json:"pickup_address_lang"`
 	Destination          string         `json:"destination"`
 	DeliveryDate         time.Time      `json:"delivery_date"`
 	DeliveryDeadlineDate time.Time      `json:"delivery_deadline_date"`

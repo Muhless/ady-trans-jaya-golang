@@ -7,12 +7,12 @@ type Transaction struct {
 	CustomerID        int        `json:"customer_id"`
 	Customer          Customer   `json:"customer" gorm:"foreignKey:CustomerID"`
 	Delivery          []Delivery `json:"delivery,omitempty" gorm:"foreignKey:TransactionID"`
-	TotalDelivery     uint       `json:"total_delivery"`
+	TotalDelivery     int        `json:"total_delivery"`
 	Cost              float64    `json:"cost"`
-	PaymentDeadline   time.Time  `json:"payment_deadline"`
+	PaymentDeadline   *time.Time  `json:"payment_deadline"`
 	DownPayment       float64    `json:"down_payment"`
 	DownPaymentStatus string     `json:"down_payment_status"`
-	DownPaymentTime   time.Time  `json:"down_payment_time"`
+	DownPaymentTime   *time.Time  `json:"down_payment_time"`
 	FullPayment       float64    `json:"full_payment"`
 	FullPaymentStatus string     `json:"full_payment_status"`
 	FullPaymentTime   *time.Time `json:"full_payment_time"`
