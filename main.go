@@ -22,6 +22,7 @@ func main() {
 	controllers.CustomersControllers(r, db)
 	transactionController := controllers.NewTransactionController(db)
 	r.POST("/api/transactions", transactionController.CreateTransaction)
+	r.GET("/api/transactions", transactionController.GetTransactions)
 	controllers.DeliveryControllers(r, db)
 	r.Run(":8080")
 }

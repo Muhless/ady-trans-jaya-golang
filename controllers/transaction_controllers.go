@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"ady-trans-jaya-golang/model"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -14,6 +15,24 @@ type TransactionController struct {
 
 func NewTransactionController(db *gorm.DB) *TransactionController {
 	return &TransactionController{DB: db}
+}
+
+func (c *TransactionController) GetTransactions(ctx *gin.Context) {
+	var transactions []model.Transaction
+
+	if err := c.DB.
+		Preload("Customer").
+		Preload("Delivery").
+		Find(&transactions).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Gagal mengambil data transaksi",
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"data": transactions,
+	})
 }
 
 func (c *TransactionController) CreateTransaction(ctx *gin.Context) {
@@ -32,6 +51,7 @@ func (c *TransactionController) CreateTransaction(ctx *gin.Context) {
 	defer func() {
 		if r := recover(); r != nil {
 			tx.Rollback()
+			fmt.Println("Recovered in CreateTransaction:", r)
 		}
 	}()
 
@@ -43,16 +63,9 @@ func (c *TransactionController) CreateTransaction(ctx *gin.Context) {
 		return
 	}
 
-	for i := range request.Deliveries {
-		// Validasi wajib isi dan format delivery_date
-		if request.Deliveries[i].DeliveryDate.IsZero() {
-			tx.Rollback()
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": "delivery_date is required"})
-			return
-		}
-
-		request.Deliveries[i].TransactionID = request.Transaction.ID
-		if err := tx.Create(&request.Deliveries[i]).Error; err != nil {
+	for _, delivery := range request.Deliveries {
+		delivery.TransactionID = request.Transaction.ID
+		if err := tx.Create(&delivery).Error; err != nil {
 			tx.Rollback()
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save delivery data"})
 			return
@@ -65,7 +78,7 @@ func (c *TransactionController) CreateTransaction(ctx *gin.Context) {
 	}
 
 	var result model.Transaction
-	if err := c.DB.Preload("Customer").Preload("Deliveries").First(&result, request.Transaction.ID).Error; err != nil {
+	if err := c.DB.Preload("Customer").Preload("Delivery").First(&result, request.Transaction.ID).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve created transaction with related data"})
 		return
 	}
