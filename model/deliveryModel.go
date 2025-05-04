@@ -23,8 +23,8 @@ type Delivery struct {
 	Vehicle                Vehicle        `json:"vehicle" gorm:"foreignKey:VehicleID"`
 	LoadType               string         `json:"load_type"`
 	Load                   string         `json:"load"`
-	Quantity               int            `json:"quantity"`
-	Weight                 int            `json:"weight"`
+	Quantity               string         `json:"quantity"`
+	Weight                 string         `json:"weight"`
 	PickupAddress          string         `json:"pickup_address"`
 	PickupAddressLat       float64        `json:"pickup_address_lat"`
 	PickupAddressLang      float64        `json:"pickup_address_lang"`
