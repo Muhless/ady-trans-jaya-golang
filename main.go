@@ -17,6 +17,7 @@ func main() {
 
 	r := gin.Default()
 	r.Use(cors.Default())
+	controllers.UserControllers(r, db)
 	controllers.DriversControllers(r, db)
 	controllers.VehicleControllers(r, db)
 	controllers.CustomersControllers(r, db)
