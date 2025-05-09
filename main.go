@@ -3,6 +3,7 @@ package main
 import (
 	"ady-trans-jaya-golang/controllers"
 	"ady-trans-jaya-golang/db"
+	"ady-trans-jaya-golang/handler"
 	"log"
 
 	"github.com/gin-contrib/cors"
@@ -24,6 +25,7 @@ func main() {
 	transactionController := controllers.NewTransactionController(db)
 	r.POST("/api/transactions", transactionController.CreateTransaction)
 	r.GET("/api/transactions", transactionController.GetTransactions)
+	r.POST("/api/users", handler.LoginHandler(db))
 	controllers.DeliveryControllers(r, db)
 	r.Run(":8080")
 }

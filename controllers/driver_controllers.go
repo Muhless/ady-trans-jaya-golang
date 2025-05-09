@@ -19,11 +19,9 @@ func DriversControllers(r *gin.Engine, db *gorm.DB) {
 		os.MkdirAll(uploadDir, 0755)
 	}
 
-	// GET semua driver
 	r.GET("/api/driver", func(ctx *gin.Context) {
 		var driver []model.Driver
 
-		// Pencarian berdasarkan nama atau nomor telepon
 		search := ctx.Query("search")
 		if search != "" {
 			if err := db.Where("name LIKE ? OR phone LIKE ?", "%"+search+"%", "%"+search+"%").Find(&driver).Error; err != nil {
@@ -40,7 +38,6 @@ func DriversControllers(r *gin.Engine, db *gorm.DB) {
 		ctx.JSON(http.StatusOK, gin.H{"data": driver})
 	})
 
-	// GET driver by ID
 	r.GET("api/driver/:id", func(ctx *gin.Context) {
 		id := ctx.Param("id")
 		var driver model.Driver

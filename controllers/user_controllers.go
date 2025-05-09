@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -18,7 +19,7 @@ func UserControllers(r *gin.Engine, db *gorm.DB) {
 		ctx.JSON(http.StatusOK, gin.H{"data": user})
 	})
 
-	r.GET("/api/users/:id", func(ctx *gin.Context) {
+	r.GET("/api/user/:id", func(ctx *gin.Context) {
 		id := ctx.Param("id")
 		var user model.User
 		if err := db.First(&user, id).Error; err != nil {
@@ -28,13 +29,20 @@ func UserControllers(r *gin.Engine, db *gorm.DB) {
 		ctx.JSON(http.StatusOK, gin.H{"data": user})
 	})
 
-	r.POST("/api/users", func(ctx *gin.Context) {
+	r.POST("/api/user", func(ctx *gin.Context) {
 		var user model.User
 
 		if err := ctx.ShouldBind(&user); err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
+
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
+			return
+		}
+		user.Password = string(hashedPassword)
 
 		if err := db.Create(&user).Error; err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed save user data"})
@@ -44,25 +52,40 @@ func UserControllers(r *gin.Engine, db *gorm.DB) {
 		ctx.JSON(http.StatusOK, gin.H{"data": user})
 	})
 
-	r.PUT("/api/users/:id", func(ctx *gin.Context) {
+	r.PUT("/api/user/:id", func(ctx *gin.Context) {
 		id := ctx.Param("id")
-		var user model.User
+		var existingUser model.User
 
-		if err := db.First(&user, id).Error; err != nil {
+		if err := db.First(&existingUser, id).Error; err != nil {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 			return
 		}
 
-		if err := ctx.ShouldBindJSON(&user); err != nil {
+		var input model.User
+		if err := ctx.ShouldBindJSON(&input); err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 
-		if err := db.Save(&user).Error; err != nil {
+		existingUser.Username = input.Username
+		existingUser.Role = input.Role
+
+		if input.Password != "" {
+			hashedPassword, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
+			if err != nil {
+				ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
+				return
+			}
+			existingUser.Password = string(hashedPassword)
+		}
+
+		if err := db.Save(&existingUser).Error; err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user data"})
 			return
 		}
 
-		ctx.JSON(http.StatusOK, gin.H{"data": user})
+		existingUser.Password = ""
+		ctx.JSON(http.StatusOK, gin.H{"data": existingUser})
 	})
+
 }
