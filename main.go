@@ -3,7 +3,6 @@ package main
 import (
 	"ady-trans-jaya-golang/controllers"
 	"ady-trans-jaya-golang/db"
-	"ady-trans-jaya-golang/handler"
 	"log"
 
 	"github.com/gin-contrib/cors"
@@ -11,21 +10,28 @@ import (
 )
 
 func main() {
-	db, err := db.Connect()
+	database, err := db.Connect()
 	if err != nil {
 		log.Fatal("Database connection error:", err)
 	}
 
 	r := gin.Default()
-	r.Use(cors.Default())
-	controllers.UserControllers(r, db)
-	controllers.DriversControllers(r, db)
-	controllers.VehicleControllers(r, db)
-	controllers.CustomersControllers(r, db)
-	transactionController := controllers.NewTransactionController(db)
+
+	r.Use(cors.New(cors.Config{
+		AllowOrigins: []string{"http://localhost:5173"},
+		AllowMethods: []string{"GET", "POST", "PUT", "DELETE"},
+		AllowHeaders: []string{"Origin", "Authorization", "Content-Type"},
+	}))
+
+	controllers.UserControllers(r, database)
+	controllers.DriversControllers(r, database)
+	controllers.VehicleControllers(r, database)
+	controllers.CustomersControllers(r, database)
+	transactionController := controllers.NewTransactionController(database)
 	r.POST("/api/transactions", transactionController.CreateTransaction)
 	r.GET("/api/transactions", transactionController.GetTransactions)
-	r.POST("/api/users", handler.LoginHandler(db))
-	controllers.DeliveryControllers(r, db)
+	// r.POST("/api/users", handler.LoginHandler(database))
+	controllers.DeliveryControllers(r, database)
+
 	r.Run(":8080")
 }
