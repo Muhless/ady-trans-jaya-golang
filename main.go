@@ -23,6 +23,7 @@ func main() {
 		AllowHeaders: []string{"Origin", "Authorization", "Content-Type"},
 	}))
 
+	r.POST("/api/login", controllers.Login)
 	controllers.UserControllers(r, database)
 	controllers.DriversControllers(r, database)
 	controllers.VehicleControllers(r, database)
