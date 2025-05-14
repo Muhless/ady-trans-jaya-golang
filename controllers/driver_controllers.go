@@ -19,7 +19,7 @@ func DriversControllers(r *gin.Engine, db *gorm.DB) {
 		os.MkdirAll(uploadDir, 0755)
 	}
 
-	r.GET("/api/driver", func(ctx *gin.Context) {
+	r.GET("/api/drivers", func(ctx *gin.Context) {
 		var driver []model.Driver
 
 		search := ctx.Query("search")
