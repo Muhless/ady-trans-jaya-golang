@@ -4,6 +4,7 @@ import (
 	"ady-trans-jaya-golang/controllers"
 	"ady-trans-jaya-golang/db"
 	"log"
+	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -17,22 +18,45 @@ func main() {
 
 	r := gin.Default()
 
+	// CORS configuration
 	r.Use(cors.New(cors.Config{
-		AllowOrigins: []string{"http://localhost:5173"},
-		AllowMethods: []string{"GET", "POST", "PUT", "DELETE"},
-		AllowHeaders: []string{"Origin", "Authorization", "Content-Type"},
+		AllowOrigins: []string{
+			"http://localhost:5173",    // untuk development
+			"http://202.10.41.13",      // alamat VPS frontend
+			// tambahkan origin lain jika perlu, misal "https://app.ady-trans-jaya.com"
+		},
+		AllowMethods: []string{
+			"GET",
+			"POST",
+			"PUT",
+			"DELETE",
+			"OPTIONS", // wajib untuk preflight
+		},
+		AllowHeaders: []string{
+			"Origin",
+			"Content-Type",
+			"Authorization",
+		},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
 	}))
 
+	// Routes
 	r.POST("/api/login", controllers.Login)
 	controllers.UserControllers(r, database)
 	controllers.DriversControllers(r, database)
 	controllers.VehicleControllers(r, database)
 	controllers.CustomersControllers(r, database)
+
 	transactionController := controllers.NewTransactionController(database)
 	r.POST("/api/transactions", transactionController.CreateTransaction)
 	r.GET("/api/transactions", transactionController.GetTransactions)
-	// r.POST("/api/users", handler.LoginHandler(database))
+
 	controllers.DeliveryControllers(r, database)
 
-	r.Run(":8080")
+	// Start server
+	if err := r.Run(":8080"); err != nil {
+		log.Fatal("Server run error:", err)
+	}
 }
