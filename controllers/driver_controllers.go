@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"ady-trans-jaya-golang/model"
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -72,6 +73,12 @@ func DriversControllers(r *gin.Engine, db *gorm.DB) {
 		if driver.Status == "" {
 			driver.Status = "tersedia"
 		}
+
+		if err := ctx.Request.ParseMultipartForm(32 << 20); err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Form parsing failed: " + err.Error()})
+			return
+		}
+		fmt.Println("Form values:", ctx.Request.Form)
 
 		var existingDriver model.Driver
 		if err := db.Where("phone = ?", driver.Phone).First(&existingDriver).Error; err == nil {
