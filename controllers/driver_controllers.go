@@ -151,6 +151,29 @@ func DriversControllers(r *gin.Engine, db *gorm.DB) {
 		ctx.JSON(http.StatusOK, gin.H{"message": "Driver successfully updated", "data": updatedDriver})
 	})
 
+	r.PATCH("/api/driver/:id", func(ctx *gin.Context) {
+		id := ctx.Param("id")
+
+		var payload map[string]interface{}
+		if err := ctx.ShouldBindJSON(&payload); err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON: " + err.Error()})
+			return
+		}
+
+		// Validasi: hanya izinkan update status
+		if status, ok := payload["status"].(string); !ok || (status != "tersedia" && status != "tidak tersedia") {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Status harus 'tersedia' atau 'tidak tersedia'"})
+			return
+		}
+
+		if err := db.Model(&model.Driver{}).Where("id = ?", id).Updates(payload).Error; err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update driver"})
+			return
+		}
+
+		ctx.JSON(http.StatusOK, gin.H{"message": "Driver status updated successfully"})
+	})
+
 	r.DELETE("/api/driver/:id", func(ctx *gin.Context) {
 		id := ctx.Param("id")
 

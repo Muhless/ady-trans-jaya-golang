@@ -65,11 +65,12 @@ func (c *TransactionController) CreateTransaction(ctx *gin.Context) {
 
 	for _, delivery := range request.Deliveries {
 		delivery.TransactionID = request.Transaction.ID
-		if err := tx.Create(&delivery).Error; err != nil {
+		if err := tx.Omit("Driver", "Vehicle").Create(&delivery).Error; err != nil {
 			tx.Rollback()
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save delivery data"})
 			return
 		}
+
 	}
 
 	if err := tx.Commit().Error; err != nil {

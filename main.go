@@ -18,19 +18,18 @@ func main() {
 
 	r := gin.Default()
 
-	// CORS configuration
 	r.Use(cors.New(cors.Config{
 		AllowOrigins: []string{
-			"http://localhost:5173",    // untuk development
-			"http://202.10.41.13",      // alamat VPS frontend
-			// tambahkan origin lain jika perlu, misal "https://app.ady-trans-jaya.com"
+			"http://localhost:5173", // untuk development
+			"http://202.10.41.13",   // alamat VPS frontend
 		},
 		AllowMethods: []string{
 			"GET",
 			"POST",
 			"PUT",
+			"PATCH",
 			"DELETE",
-			"OPTIONS", // wajib untuk preflight
+			"OPTIONS",
 		},
 		AllowHeaders: []string{
 			"Origin",

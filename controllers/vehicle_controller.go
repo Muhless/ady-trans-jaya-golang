@@ -79,6 +79,28 @@ func VehicleControllers(r *gin.Engine, db *gorm.DB) {
 		ctx.JSON(http.StatusOK, gin.H{"message": "Vehicle Data Successfully Updated", "data": vehicle})
 	})
 
+	r.PATCH("/api/vehicle/:id", func(ctx *gin.Context) {
+		id := ctx.Param("id")
+
+		var payload map[string]interface{}
+		if err := ctx.ShouldBindJSON(&payload); err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON: " + err.Error()})
+			return
+		}
+
+		if status, ok := payload["status"].(string); !ok || (status != "tersedia" && status != "tidak tersedia") {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Status harus 'tersedia' atau 'tidak tersedia'"})
+			return
+		}
+
+		if err := db.Model(&model.Driver{}).Where("id = ?", id).Updates(payload).Error; err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update vehicle"})
+			return
+		}
+
+		ctx.JSON(http.StatusOK, gin.H{"message": "Vehicle status updated successfully"})
+	})
+
 	r.DELETE("/api/vehicle/:id", func(ctx *gin.Context) {
 		id := ctx.Param("id")
 		var vehicle model.Vehicle
