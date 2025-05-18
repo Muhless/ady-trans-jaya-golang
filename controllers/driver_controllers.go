@@ -103,12 +103,18 @@ func DriversControllers(r *gin.Engine, db *gorm.DB) {
 			return
 		}
 
-		var updatedDriver model.Driver
-		if err := ctx.ShouldBind(&updatedDriver); err != nil {
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		if err := ctx.Request.ParseMultipartForm(32 << 20); err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid multipart form"})
 			return
 		}
 
+		var updatedDriver model.Driver
+		updatedDriver.Name = ctx.PostForm("name")
+		updatedDriver.Phone = ctx.PostForm("phone")
+		updatedDriver.Address = ctx.PostForm("address")
+		updatedDriver.Status = model.DriverStatus(ctx.PostForm("status"))
+
+		// Handle uploaded file
 		file, err := ctx.FormFile("photo")
 		if err == nil {
 			if existingDriver.Photo != "" && !strings.HasPrefix(existingDriver.Photo, "http") {
@@ -131,6 +137,7 @@ func DriversControllers(r *gin.Engine, db *gorm.DB) {
 			updatedDriver.Photo = existingDriver.Photo
 		}
 
+		// Cek apakah phone sudah digunakan driver lain
 		if updatedDriver.Phone != existingDriver.Phone {
 			var phoneExist model.Driver
 			if err := db.Where("phone = ? AND id != ?", updatedDriver.Phone, id).First(&phoneExist).Error; err == nil {
