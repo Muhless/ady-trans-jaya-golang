@@ -1,0 +1,3 @@
+ALTER TABLE drivers
+ADD COLUMN username VARCHAR(30) UNIQUE,
+ADD COLUMN password TEXT;

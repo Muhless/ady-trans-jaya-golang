@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"ady-trans-jaya-golang/model"
-	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -22,6 +22,7 @@ func DriversControllers(r *gin.Engine, db *gorm.DB) {
 
 	r.GET("/api/drivers", func(ctx *gin.Context) {
 		var driver []model.Driver
+		db.Order("created_at DESC").Find(&driver)
 
 		search := ctx.Query("search")
 		if search != "" {
@@ -42,6 +43,7 @@ func DriversControllers(r *gin.Engine, db *gorm.DB) {
 	r.GET("api/driver/:id", func(ctx *gin.Context) {
 		id := ctx.Param("id")
 		var driver model.Driver
+
 		if err := db.First(&driver, id).Error; err != nil {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": "Driver not found"})
 			return
@@ -50,48 +52,77 @@ func DriversControllers(r *gin.Engine, db *gorm.DB) {
 	})
 
 	r.POST("/api/driver", func(ctx *gin.Context) {
-		var driver model.Driver
-
-		if err := ctx.ShouldBind(&driver); err != nil {
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-
-		file, err := ctx.FormFile("photo")
-		if err == nil {
-			filename := uuid.New().String() + filepath.Ext(file.Filename)
-			filePath := filepath.Join(uploadDir, filename)
-
-			if err := ctx.SaveUploadedFile(file, filePath); err != nil {
-				ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
-				return
-			}
-
-			driver.Photo = "/uploads/" + filename
-		}
-
-		if driver.Status == "" {
-			driver.Status = "tersedia"
-		}
-
+		// Parse multipart form
 		if err := ctx.Request.ParseMultipartForm(32 << 20); err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Form parsing failed: " + err.Error()})
 			return
 		}
-		fmt.Println("Form values:", ctx.Request.Form)
 
-		var existingDriver model.Driver
-		if err := db.Where("phone = ?", driver.Phone).First(&existingDriver).Error; err == nil {
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Nomor telepon sudah terdaftar"})
+		// Ambil nilai dari form
+		name := ctx.PostForm("name")
+		phone := ctx.PostForm("phone")
+		address := ctx.PostForm("address")
+		status := ctx.PostForm("status")
+		username := ctx.PostForm("username")
+		password := ctx.PostForm("password")
+
+		if name == "" || phone == "" || username == "" || password == "" {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Nama, Telepon, Username, dan Password wajib diisi"})
 			return
+		}
+
+		// Cek duplikasi phone
+		var exist model.Driver
+		if err := db.Where("phone = ?", phone).Or("username = ?", username).First(&exist).Error; err == nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Username atau nomor telepon sudah digunakan"})
+			return
+		}
+
+		// Hash password
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal meng-hash password"})
+			return
+		}
+
+		// Handle upload photo
+		var photoPath string
+		file, err := ctx.FormFile("photo")
+		if err == nil {
+			filename := uuid.New().String() + filepath.Ext(file.Filename)
+			filePath := filepath.Join(uploadDir, filename)
+			if err := ctx.SaveUploadedFile(file, filePath); err != nil {
+				ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menyimpan file foto"})
+				return
+			}
+			photoPath = "/uploads/" + filename
+		}
+
+		// Default status jika kosong
+		if status == "" {
+			status = "tersedia"
+		}
+
+		// Buat driver
+		driver := model.Driver{
+			Name:     name,
+			Phone:    phone,
+			Address:  address,
+			Status:   model.DriverStatus(status),
+			Username: username,
+			Password: string(hashedPassword),
+			Photo:    photoPath,
 		}
 
 		if err := db.Create(&driver).Error; err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed save drivers data"})
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menyimpan data driver"})
 			return
 		}
 
-		ctx.JSON(http.StatusOK, gin.H{"message": "Driver successfully saved", "data": driver})
+		ctx.JSON(http.StatusOK, gin.H{
+			"message": "Driver berhasil disimpan",
+			"data":    driver,
+		})
 	})
 
 	r.PUT("/api/driver/:id", func(ctx *gin.Context) {
@@ -113,6 +144,16 @@ func DriversControllers(r *gin.Engine, db *gorm.DB) {
 		updatedDriver.Phone = ctx.PostForm("phone")
 		updatedDriver.Address = ctx.PostForm("address")
 		updatedDriver.Status = model.DriverStatus(ctx.PostForm("status"))
+		updatedDriver.Username = ctx.PostForm("username")
+		password := ctx.PostForm("password")
+		if password != "" {
+			hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+			if err != nil {
+				ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
+				return
+			}
+			existingDriver.Password = string(hashedPassword)
+		}
 
 		// Handle uploaded file
 		file, err := ctx.FormFile("photo")
@@ -167,18 +208,38 @@ func DriversControllers(r *gin.Engine, db *gorm.DB) {
 			return
 		}
 
-		// Validasi: hanya izinkan update status
-		if status, ok := payload["status"].(string); !ok || (status != "tersedia" && status != "tidak tersedia") {
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Status harus 'tersedia' atau 'tidak tersedia'"})
-			return
+		// Validasi status jika ada
+		if statusRaw, ok := payload["status"]; ok {
+			status, ok := statusRaw.(string)
+			if !ok || (status != "tersedia" && status != "tidak tersedia") {
+				ctx.JSON(http.StatusBadRequest, gin.H{"error": "Status harus 'tersedia' atau 'tidak tersedia'"})
+				return
+			}
 		}
+
+		// Hash password jika akan diubah
+		if passwordRaw, ok := payload["password"]; ok {
+			passwordStr, ok := passwordRaw.(string)
+			if !ok || passwordStr == "" {
+				ctx.JSON(http.StatusBadRequest, gin.H{"error": "Password tidak boleh kosong"})
+				return
+			}
+			hashed, err := bcrypt.GenerateFromPassword([]byte(passwordStr), bcrypt.DefaultCost)
+			if err != nil {
+				ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal hash password"})
+				return
+			}
+			payload["password"] = string(hashed)
+		}
+
+		payload["updated_at"] = time.Now()
 
 		if err := db.Model(&model.Driver{}).Where("id = ?", id).Updates(payload).Error; err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update driver"})
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengupdate data driver"})
 			return
 		}
 
-		ctx.JSON(http.StatusOK, gin.H{"message": "Driver status updated successfully"})
+		ctx.JSON(http.StatusOK, gin.H{"message": "Driver berhasil diupdate"})
 	})
 
 	r.DELETE("/api/driver/:id", func(ctx *gin.Context) {

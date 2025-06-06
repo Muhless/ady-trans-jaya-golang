@@ -22,6 +22,7 @@ func main() {
 		AllowOrigins: []string{
 			"http://localhost:5173", // untuk development
 			"http://202.10.41.13",   // alamat VPS frontend
+			"http://10.0.2.2",       // android
 		},
 		AllowMethods: []string{
 			"GET",

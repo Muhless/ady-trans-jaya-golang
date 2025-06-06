@@ -12,6 +12,8 @@ import (
 func UserControllers(r *gin.Engine, db *gorm.DB) {
 	r.GET("/api/users", func(ctx *gin.Context) {
 		var user []model.User
+		db.Order("id ASC").Find(&user)
+
 		if err := db.Find(&user).Error; err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve users data"})
 			return
@@ -22,6 +24,7 @@ func UserControllers(r *gin.Engine, db *gorm.DB) {
 	r.GET("/api/user/:id", func(ctx *gin.Context) {
 		id := ctx.Param("id")
 		var user model.User
+
 		if err := db.First(&user, id).Error; err != nil {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
 			return
