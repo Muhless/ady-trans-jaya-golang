@@ -21,10 +21,9 @@ type Delivery struct {
 	Driver                 Driver         `json:"driver" gorm:"foreignKey:DriverID"`
 	VehicleID              int            `json:"vehicle_id"`
 	Vehicle                Vehicle        `json:"vehicle" gorm:"foreignKey:VehicleID"`
-	LoadType               string         `json:"load_type"`
-	Load                   string         `json:"load"`
-	Quantity               string         `json:"quantity"`
-	Weight                 string         `json:"weight"`
+	DeliveryCode           string         `json:"delivery_code"`
+	TotalWeight            int            `json:"total_weight"`
+	TotalItem              int            `json:"total_item"`
 	PickupAddress          string         `json:"pickup_address"`
 	PickupAddressLat       float64        `json:"pickup_address_lat"`
 	PickupAddressLang      float64        `json:"pickup_address_lang"`
@@ -38,4 +37,5 @@ type Delivery struct {
 	ApprovedAt             *time.Time     `json:"approved_at"`
 	CreatedAt              time.Time      `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt              time.Time      `json:"updated_at" gorm:"autoUpdateTime"`
+	Items                  []DeliveryItem `json:"items" gorm:"foreignKey:DeliveryID"`
 }

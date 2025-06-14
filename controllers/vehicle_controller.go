@@ -15,7 +15,7 @@ import (
 func VehicleControllers(r *gin.Engine, db *gorm.DB) {
 	r.GET("/api/vehicles", func(ctx *gin.Context) {
 		var vehicle []model.Vehicle
-		if err := db.Find(&vehicle).Error; err != nil {
+		if err := db.Order("created_at ASC").Find(&vehicle).Error; err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve vehicle data"})
 			return
 		}

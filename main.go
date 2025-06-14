@@ -3,6 +3,7 @@ package main
 import (
 	"ady-trans-jaya-golang/controllers"
 	"ady-trans-jaya-golang/db"
+	"ady-trans-jaya-golang/routes"
 	"log"
 	"time"
 
@@ -44,18 +45,16 @@ func main() {
 
 	// Routes
 	r.POST("/api/login", controllers.Login)
+	r.POST("/api/login-driver", controllers.LoginDriver)
+
 	controllers.UserControllers(r, database)
 	controllers.DriversControllers(r, database)
 	controllers.VehicleControllers(r, database)
 	controllers.CustomersControllers(r, database)
-
-	transactionController := controllers.NewTransactionController(database)
-	r.POST("/api/transactions", transactionController.CreateTransaction)
-	r.GET("/api/transactions", transactionController.GetTransactions)
-
 	controllers.DeliveryControllers(r, database)
 
-	// Start server
+	routes.SetupTransactionRoutes(r, database)
+
 	if err := r.Run(":8080"); err != nil {
 		log.Fatal("Server run error:", err)
 	}

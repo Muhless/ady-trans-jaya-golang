@@ -1,7 +1,9 @@
 package controllers
 
 import (
+	"ady-trans-jaya-golang/middleware"
 	"ady-trans-jaya-golang/model"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -31,7 +33,7 @@ func DriversControllers(r *gin.Engine, db *gorm.DB) {
 				return
 			}
 		} else {
-			if err := db.Find(&driver).Error; err != nil {
+			if err := db.Order("created_at ASC").Find(&driver).Error; err != nil {
 				ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve drivers data"})
 				return
 			}
@@ -51,14 +53,39 @@ func DriversControllers(r *gin.Engine, db *gorm.DB) {
 		ctx.JSON(http.StatusOK, gin.H{"data": driver})
 	})
 
+	r.GET("/api/driver/me", middleware.AuthMiddleware(), func(c *gin.Context) {
+		userID := c.MustGet("userID").(int)
+
+		var driver model.Driver
+		if err := db.First(&driver, userID).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Driver not found"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"data": driver})
+	})
+
+	r.GET("api/driver/username/:username", func(ctx *gin.Context) {
+		username := ctx.Param("username")
+		var driver model.Driver
+
+		if err := db.Where("username = ?", username).First(&driver).Error; err != nil {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "Driver not found"})
+			return
+		}
+
+		ctx.JSON(http.StatusOK, gin.H{"data": driver})
+	})
+
 	r.POST("/api/driver", func(ctx *gin.Context) {
-		// Parse multipart form
+		log.Println("Menerima request POST /api/driver")
+
 		if err := ctx.Request.ParseMultipartForm(32 << 20); err != nil {
+			log.Println("Form parsing failed:", err)
 			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Form parsing failed: " + err.Error()})
 			return
 		}
 
-		// Ambil nilai dari form
 		name := ctx.PostForm("name")
 		phone := ctx.PostForm("phone")
 		address := ctx.PostForm("address")
@@ -66,44 +93,49 @@ func DriversControllers(r *gin.Engine, db *gorm.DB) {
 		username := ctx.PostForm("username")
 		password := ctx.PostForm("password")
 
+		log.Printf("Data form: name=%s, phone=%s, address=%s, username=%s", name, phone, address, username)
+
 		if name == "" || phone == "" || username == "" || password == "" {
+			log.Println("Validasi gagal: data tidak boleh kosong")
 			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Nama, Telepon, Username, dan Password wajib diisi"})
 			return
 		}
 
-		// Cek duplikasi phone
 		var exist model.Driver
 		if err := db.Where("phone = ?", phone).Or("username = ?", username).First(&exist).Error; err == nil {
+			log.Println("Duplikasi data ditemukan")
 			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Username atau nomor telepon sudah digunakan"})
 			return
 		}
 
-		// Hash password
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 		if err != nil {
+			log.Println("Gagal hash password:", err)
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal meng-hash password"})
 			return
 		}
 
-		// Handle upload photo
 		var photoPath string
 		file, err := ctx.FormFile("photo")
 		if err == nil {
+			log.Println("Menerima file foto:", file.Filename)
 			filename := uuid.New().String() + filepath.Ext(file.Filename)
 			filePath := filepath.Join(uploadDir, filename)
 			if err := ctx.SaveUploadedFile(file, filePath); err != nil {
+				log.Println("Gagal simpan file:", err)
 				ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menyimpan file foto"})
 				return
 			}
 			photoPath = "/uploads/" + filename
+		} else {
+			log.Println("Tidak ada file foto diunggah:", err)
 		}
 
-		// Default status jika kosong
 		if status == "" {
 			status = "tersedia"
+			log.Println("Status default di-set ke:", status)
 		}
 
-		// Buat driver
 		driver := model.Driver{
 			Name:     name,
 			Phone:    phone,
@@ -115,9 +147,12 @@ func DriversControllers(r *gin.Engine, db *gorm.DB) {
 		}
 
 		if err := db.Create(&driver).Error; err != nil {
+			log.Println("Gagal simpan ke database:", err)
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menyimpan data driver"})
 			return
 		}
+
+		log.Println("Driver berhasil disimpan:", driver.ID)
 
 		ctx.JSON(http.StatusOK, gin.H{
 			"message": "Driver berhasil disimpan",

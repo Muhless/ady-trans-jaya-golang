@@ -1,0 +1,3 @@
+ALTER TABLE delivery_items
+ALTER COLUMN weight TYPE INTEGER
+USING weight::INTEGER;

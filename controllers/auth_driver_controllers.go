@@ -10,10 +10,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
-	"gorm.io/gorm"
 )
 
-func Login(c *gin.Context) {
+func LoginDriver(c *gin.Context) {
 	var input struct {
 		Username string `json:"username" binding:"required"`
 		Password string `json:"password" binding:"required"`
@@ -24,25 +23,20 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	var user model.User
-	if err := db.DB.Where("username = ?", input.Username).First(&user).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusUnauthorized, gin.H{"message": "Username tidak ditemukan"})
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Database error"})
-		}
+	var driver model.Driver
+	if err := db.DB.Where("username = ?", input.Username).First(&driver).Error; err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Username tidak ditemukan"})
 		return
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.Password)); err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(driver.Password), []byte(input.Password)); err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"message": "Password salah"})
 		return
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"id":       user.ID,
-		"username": user.Username,
-		"role":     user.Role,
+		"id":       driver.ID,
+		"username": driver.Username,
 		"exp":      time.Now().Add(2 * time.Hour).Unix(),
 	})
 
@@ -54,11 +48,14 @@ func Login(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"user": gin.H{
-			"id":       user.ID,
-			"username": user.Username,
-			"role":     user.Role,
-		},
 		"token": tokenString,
+		"driver": gin.H{
+			"id":       driver.ID,
+			"name":     driver.Name,
+			"username": driver.Username,
+			"phone":    driver.Phone,
+			"address":  driver.Address,
+			"photo":    driver.Photo,
+		},
 	})
 }

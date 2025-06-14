@@ -1,0 +1,2 @@
+ALTER TABLE deliveries
+ADD COLUMN total_item INTEGER DEFAULT 0;

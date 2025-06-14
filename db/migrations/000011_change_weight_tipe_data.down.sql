@@ -1,0 +1,3 @@
+ALTER TABLE delivery_items
+ALTER COLUMN weight TYPE VARCHAR(10)
+USING weight::VARCHAR;
