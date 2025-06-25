@@ -1,12 +1,14 @@
 package controllers
 
 import (
+	"ady-trans-jaya-golang/db"
 	"ady-trans-jaya-golang/middleware"
 	"ady-trans-jaya-golang/model"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -15,6 +17,10 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
+
+type DriverController struct {
+	DB *gorm.DB
+}
 
 func DriversControllers(r *gin.Engine, db *gorm.DB) {
 	uploadDir := "./uploads"
@@ -319,4 +325,40 @@ func DriversControllers(r *gin.Engine, db *gorm.DB) {
 	})
 
 	r.Static("/uploads", "./uploads")
+}
+
+func (c *DriverController) GetActiveDeliveryForDriver(ctx *gin.Context) {
+	driverIDStr := ctx.Param("id")
+
+	driverID, err := strconv.Atoi(driverIDStr)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": "ID driver tidak valid",
+		})
+		return
+	}
+
+	var delivery model.Delivery
+
+	err = db.DB.Preload("Driver").
+		Where("driver_id = ? AND delivery_status IN (?)", driverID, []string{"menunggu pengemudi", "dalam pengiriman"}).
+		First(&delivery).Error
+
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			ctx.JSON(http.StatusNotFound, gin.H{
+				"message": "Pengiriman aktif tidak ditemukan untuk driver ini",
+			})
+			return
+		}
+
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Terjadi kesalahan saat mengambil data pengiriman",
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"data": delivery,
+	})
 }

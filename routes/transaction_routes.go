@@ -15,13 +15,14 @@ func SetupTransactionRoutes(router *gin.Engine, db *gorm.DB) {
 		transactions := api.Group("/transactions")
 		{
 			transactions.GET("", transactionController.GetTransactions)
-			transactions.GET("/paginated", transactionController.GetTransactionsPaginated)
 			transactions.GET("/search", transactionController.SearchTransactions)
 			transactions.GET("/:id", transactionController.GetTransactionByID)
 			transactions.POST("", transactionController.CreateTransaction)
 			transactions.PUT("/:id", transactionController.UpdateTransaction)
 			transactions.DELETE("/:id", transactionController.DeleteTransaction)
+			transactions.PATCH("/:id", transactionController.PatchTransaction)
 			transactions.PATCH("/:id/status", transactionController.UpdateTransactionStatus)
+
 		}
 
 		customers := api.Group("/customers")

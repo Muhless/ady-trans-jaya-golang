@@ -93,7 +93,7 @@ func VehicleControllers(r *gin.Engine, db *gorm.DB) {
 			return
 		}
 
-		if err := db.Model(&model.Driver{}).Where("id = ?", id).Updates(payload).Error; err != nil {
+		if err := db.Model(&model.Vehicle{}).Where("id = ?", id).Updates(payload).Error; err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update vehicle"})
 			return
 		}
