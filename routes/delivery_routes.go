@@ -14,8 +14,9 @@ func RegisterDeliveryRoutes(router *gin.Engine, db *gorm.DB) {
 	{
 		deliveryGroup := api.Group("/delivery")
 		{
-			deliveryGroup.PATCH("/:id/status", controller.UpdateDeliveryStatus)
 			deliveryGroup.GET("/driver/:id/active", controllers.GetActiveDeliveriesByDriver)
+			deliveryGroup.GET("/driver/:id/history", controller.GetHistoryDeliveries)
+			deliveryGroup.PATCH("/:id/status", controller.UpdateDeliveryStatus)
 			deliveryGroup.PATCH("/driver/:id/status", controller.UpdateDeliveryDriverStatus)
 		}
 	}

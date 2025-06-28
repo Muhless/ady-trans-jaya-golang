@@ -14,11 +14,13 @@ func RegisterDeliveryProgressRoutes(router *gin.Engine, db *gorm.DB) {
 	{
 		progressGroup := api.Group("/delivery-progress")
 		{
-			progressGroup.GET("/:delivery_id", progressController.GetProgressByDeliveryID)
-			progressGroup.POST("/", progressController.CreateProgress)
-			progressGroup.PATCH("/:id", progressController.PatchProgress)
+			progressGroup.GET("/:id/progress", progressController.GetProgressByDeliveryID)
+			progressGroup.POST("", progressController.CreateDeliveryProgress)
+			progressGroup.DELETE("/:id", progressController.DeleteDeliveryProgress)
 
+			// Tambahan untuk upload foto
+			progressGroup.POST("/upload-pickup/:id", progressController.UploadPickupPhoto)
+			progressGroup.POST("/upload-delivery/:id", progressController.UploadDeliveryPhoto)
 		}
 	}
-
 }

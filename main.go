@@ -21,8 +21,8 @@ func main() {
 
 	r.Use(cors.New(cors.Config{
 		AllowOrigins: []string{
-			"http://localhost:5173", // untuk development
-			"http://202.10.41.13",   // alamat VPS frontend
+			"http://localhost:5173", // development
+			"http://202.10.41.13",   // VPS
 			"http://10.0.2.2",       // android
 		},
 		AllowMethods: []string{
@@ -43,7 +43,6 @@ func main() {
 		MaxAge:           12 * time.Hour,
 	}))
 
-	// Routes
 	r.POST("/api/login", controllers.Login)
 	r.POST("/api/login-driver", controllers.LoginDriver)
 
@@ -56,6 +55,7 @@ func main() {
 	routes.SetupTransactionRoutes(r, database)
 	routes.RegisterDeliveryRoutes(r, database)
 	routes.RegisterDeliveryItemRoutes(r, database)
+	routes.RegisterDeliveryProgressRoutes(r,database)
 
 	if err := r.Run(":8080"); err != nil {
 		log.Fatal("Server run error:", err)

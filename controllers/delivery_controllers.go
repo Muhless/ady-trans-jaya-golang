@@ -18,7 +18,13 @@ type DeliveryController struct {
 func DeliveryControllers(r *gin.Engine, db *gorm.DB) {
 	r.GET("/api/deliveries", func(ctx *gin.Context) {
 		var delivery []model.Delivery
-		if err := db.Preload("Transaction").Preload("Transaction.Customer").Preload("Driver").Preload("Vehicle").Preload("Items").Find(&delivery).Error; err != nil {
+		if err := db.Preload("Transaction").
+			Preload("Transaction.Customer").
+			Preload("Driver").
+			Preload("Vehicle").
+			Preload("Items").
+			Preload("DeliveryProgress").
+			Find(&delivery).Error; err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve delivery data"})
 			return
 		}
@@ -83,7 +89,6 @@ func DeliveryControllers(r *gin.Engine, db *gorm.DB) {
 		var deliveries []model.Delivery
 		query := db.Preload("Transaction").Preload("Transaction.Customer").Preload("Driver").Preload("Vehicle")
 
-		// Process query parameters
 		if status := ctx.Query("status"); status != "" {
 			query = query.Where("delivery_status = ?", status)
 		}
@@ -100,7 +105,6 @@ func DeliveryControllers(r *gin.Engine, db *gorm.DB) {
 			query = query.Where("transaction_id = ?", transactionID)
 		}
 
-		// Date range searching if needed
 		if startDate := ctx.Query("start_date"); startDate != "" {
 			query = query.Where("created_at >= ?", startDate)
 		}
@@ -109,7 +113,6 @@ func DeliveryControllers(r *gin.Engine, db *gorm.DB) {
 			query = query.Where("created_at <= ?", endDate)
 		}
 
-		// Execute the query
 		if err := query.Find(&deliveries).Error; err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to search delivery data"})
 			return
@@ -127,20 +130,17 @@ func DeliveryControllers(r *gin.Engine, db *gorm.DB) {
 			return
 		}
 
-		// Bind the updated data
 		var updatedDelivery model.Delivery
 		if err := ctx.ShouldBindJSON(&updatedDelivery); err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 
-		// Update the delivery
 		if err := db.Model(&delivery).Updates(updatedDelivery).Error; err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update delivery data"})
 			return
 		}
 
-		// Fetch the updated delivery with all relations
 		if err := db.Preload("Transaction").Preload("Transaction.Customer").Preload("Driver").Preload("Vehicle").First(&delivery, id).Error; err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve updated delivery data"})
 			return
@@ -316,6 +316,29 @@ func (c *DeliveryController) UpdateDeliveryStatus(ctx *gin.Context) {
 	})
 }
 
+func (c *DeliveryController) GetHistoryDeliveries(ctx *gin.Context) {
+	driverID := ctx.Param("id")
+
+	var deliveries []model.Delivery
+	if err := c.DB.Preload("Transaction").
+		Preload("Transaction.Customer").
+		Preload("Driver").
+		Preload("Vehicle").
+		Preload("Items").
+		Preload("DeliveryProgress").
+		Where("driver_id = ? AND (delivery_status = ? OR delivery_status = ?)",
+			driverID,
+			"selesai",
+			"dibatalkan",
+		).
+		Find(&deliveries).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil data pengiriman"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"data": deliveries})
+}
+
 func GetActiveDeliveriesByDriver(ctx *gin.Context) {
 	driverID := ctx.Param("id")
 
@@ -326,6 +349,7 @@ func GetActiveDeliveriesByDriver(ctx *gin.Context) {
 		Preload("Driver").
 		Preload("Vehicle").
 		Preload("Items").
+		Preload("DeliveryProgress").
 		Where("driver_id = ? AND (delivery_status = ? OR delivery_status = ?)",
 			driverID,
 			model.DeliveryStatusOnDelivery,
@@ -359,6 +383,22 @@ func (c *DeliveryController) UpdateDeliveryDriverStatus(ctx *gin.Context) {
 	if err := c.DB.Save(&delivery).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal memperbarui data"})
 		return
+	}
+
+	if req.DeliveryStatus == "selesai" {
+		if err := c.DB.Model(&model.Driver{}).
+			Where("id = ?", delivery.DriverID).
+			Update("status", "tersedia").Error; err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal memperbarui status driver"})
+			return
+		}
+
+		if err := c.DB.Model(&model.Vehicle{}).
+			Where("id = ?", delivery.VehicleID).
+			Update("status", "tersedia").Error; err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal memperbarui status kendaraan"})
+			return
+		}
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Status pengiriman berhasil diperbarui"})
