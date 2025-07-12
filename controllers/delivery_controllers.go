@@ -224,7 +224,7 @@ func (c *DeliveryController) UpdateDeliveryStatus(ctx *gin.Context) {
 		return
 	}
 
-	validStatuses := []string{"menunggu persetujuan", "disetujui", "ditolak", "dalam pengiriman"}
+	validStatuses := []string{"menunggu persetujuan", "disetujui", "ditolak", "dalam pengiriman", "selesai"}
 	isValid := false
 	for _, status := range validStatuses {
 		if body.DeliveryStatus == status {
@@ -265,43 +265,48 @@ func (c *DeliveryController) UpdateDeliveryStatus(ctx *gin.Context) {
 		return
 	}
 
-	if body.DeliveryStatus == "disetujui" || body.DeliveryStatus == "ditolak" {
-		var deliveries []model.Delivery
-		if err := tx.Where("transaction_id = ?", delivery.TransactionID).Find(&deliveries).Error; err != nil {
+	var deliveries []model.Delivery
+	if err := tx.Where("transaction_id = ?", delivery.TransactionID).Find(&deliveries).Error; err != nil {
+		tx.Rollback()
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil daftar pengiriman"})
+		return
+	}
+
+	approvedCount := 0
+	rejectedCount := 0
+	completedCount := 0
+	total := len(deliveries)
+
+	for _, d := range deliveries {
+		switch string(d.DeliveryStatus) {
+		case "disetujui":
+			approvedCount++
+		case "ditolak":
+			rejectedCount++
+		case "selesai":
+			completedCount++
+		}
+	}
+
+	var newStatus string
+	switch {
+	case completedCount == total:
+		newStatus = "menunggu pelunasan"
+	case rejectedCount == total:
+		newStatus = "dibatalkan"
+	case approvedCount >= 1:
+		newStatus = "diproses"
+	default:
+		newStatus = ""
+	}
+
+	if newStatus != "" {
+		if err := tx.Model(&model.Transaction{}).
+			Where("id = ?", delivery.TransactionID).
+			Update("transaction_status", newStatus).Error; err != nil {
 			tx.Rollback()
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil daftar pengiriman"})
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal memperbarui status transaksi"})
 			return
-		}
-
-		approvedCount := 0
-		rejectedCount := 0
-
-		for _, d := range deliveries {
-			if string(d.DeliveryStatus) == "disetujui" {
-				approvedCount++
-			} else if string(d.DeliveryStatus) == "ditolak" {
-				rejectedCount++
-			}
-		}
-
-		totalDeliveries := len(deliveries)
-
-		if rejectedCount == totalDeliveries {
-			if err := tx.Model(&model.Transaction{}).
-				Where("id = ?", delivery.TransactionID).
-				Update("transaction_status", "dibatalkan").Error; err != nil {
-				tx.Rollback()
-				ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal memperbarui status transaksi"})
-				return
-			}
-		} else if approvedCount >= 1 {
-			if err := tx.Model(&model.Transaction{}).
-				Where("id = ?", delivery.TransactionID).
-				Update("transaction_status", "diproses").Error; err != nil {
-				tx.Rollback()
-				ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal memperbarui status transaksi"})
-				return
-			}
 		}
 	}
 

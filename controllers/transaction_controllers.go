@@ -398,7 +398,7 @@ func (c *TransactionController) UpdateTransactionStatus(ctx *gin.Context) {
 
 	if body.TransactionStatus == "berjalan" {
 		if err := tx.Model(&model.Delivery{}).
-			Where("transaction_id = ?", transaction.ID).
+			Where("transaction_id = ? AND delivery_status = ?", transaction.ID, "disetujui").
 			Update("delivery_status", "menunggu pengemudi").Error; err != nil {
 			tx.Rollback()
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengupdate status pengiriman"})

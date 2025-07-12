@@ -52,10 +52,11 @@ func main() {
 	controllers.CustomersControllers(r, database)
 	controllers.DeliveryControllers(r, database)
 
+	routes.RegisterCustomerRoutes(r, database)
 	routes.SetupTransactionRoutes(r, database)
 	routes.RegisterDeliveryRoutes(r, database)
 	routes.RegisterDeliveryItemRoutes(r, database)
-	routes.RegisterDeliveryProgressRoutes(r,database)
+	routes.RegisterDeliveryProgressRoutes(r, database)
 
 	if err := r.Run(":8080"); err != nil {
 		log.Fatal("Server run error:", err)
