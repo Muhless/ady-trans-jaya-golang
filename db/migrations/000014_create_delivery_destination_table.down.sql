@@ -1,1 +1,1 @@
-DROP TABLE IF EXISTS delivery_progresses;
+DROP TABLE IF EXISTS delivery_destinations;

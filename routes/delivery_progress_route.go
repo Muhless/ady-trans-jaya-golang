@@ -8,19 +8,15 @@ import (
 )
 
 func RegisterDeliveryProgressRoutes(router *gin.Engine, db *gorm.DB) {
-	progressController := controllers.DeliveryProgressController{DB: db}
+	destinationController := controllers.DeliveryDestinationControllers{DB: db}
 
 	api := router.Group("/api")
 	{
-		progressGroup := api.Group("/delivery-progress")
+		destinationGroup := api.Group("/delivery-destination")
 		{
-			progressGroup.GET("/:id/progress", progressController.GetProgressByDeliveryID)
-			progressGroup.POST("", progressController.CreateDeliveryProgress)
-			progressGroup.DELETE("/:id", progressController.DeleteDeliveryProgress)
-
-			// Tambahan untuk upload foto
-			progressGroup.POST("/upload-pickup/:id", progressController.UploadPickupPhoto)
-			progressGroup.POST("/upload-delivery/:id", progressController.UploadDeliveryPhoto)
+			destinationGroup.POST("/", destinationController.CreateDestinations)
+			destinationGroup.GET("/:id", destinationController.GetDestinationsByDeliveryID)
+			destinationGroup.POST("", destinationController.UploadArrivalPhoto)
 		}
 	}
 }

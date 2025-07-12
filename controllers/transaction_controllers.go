@@ -72,6 +72,7 @@ func (c *TransactionController) CreateTransaction(ctx *gin.Context) {
 
 	var request CreateTransactionRequest
 	if err := ctx.ShouldBindJSON(&request); err != nil {
+		fmt.Println("Bind JSON error:", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}

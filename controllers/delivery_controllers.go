@@ -23,7 +23,7 @@ func DeliveryControllers(r *gin.Engine, db *gorm.DB) {
 			Preload("Driver").
 			Preload("Vehicle").
 			Preload("Items").
-			Preload("DeliveryProgress").
+			Preload("DeliveryDestinations").
 			Find(&delivery).Error; err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve delivery data"})
 			return
@@ -62,7 +62,7 @@ func DeliveryControllers(r *gin.Engine, db *gorm.DB) {
 		id := ctx.Param("id")
 		var delivery model.Delivery
 
-		if err := db.Preload("Transaction").Preload("Transaction.Customer").Preload("Driver").Preload("Vehicle").Preload("Items").Preload("DeliveryProgress").First(&delivery, id).Error; err != nil {
+		if err := db.Preload("Transaction").Preload("Transaction.Customer").Preload("Driver").Preload("Vehicle").Preload("Items").Preload("DeliveryDestinations").First(&delivery, id).Error; err != nil {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": "Delivery data not found"})
 			return
 		}

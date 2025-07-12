@@ -1,0 +1,6 @@
+ALTER TABLE delivery_items
+ALTER COLUMN quantity TYPE INTEGER
+USING quantity::INTEGER;
+
+ALTER TABLE delivery_items
+ADD COLUMN unit VARCHAR(10);
