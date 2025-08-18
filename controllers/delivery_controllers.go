@@ -62,7 +62,13 @@ func DeliveryControllers(r *gin.Engine, db *gorm.DB) {
 		id := ctx.Param("id")
 		var delivery model.Delivery
 
-		if err := db.Preload("Transaction").Preload("Transaction.Customer").Preload("Driver").Preload("Vehicle").Preload("Items").Preload("DeliveryDestinations").First(&delivery, id).Error; err != nil {
+		if err := db.Preload("Transaction").
+			Preload("Transaction.Customer").
+			Preload("Driver").
+			Preload("Vehicle").
+			Preload("Items").
+			Preload("DeliveryDestinations").
+			First(&delivery, id).Error; err != nil {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": "Delivery data not found"})
 			return
 		}
@@ -75,7 +81,9 @@ func DeliveryControllers(r *gin.Engine, db *gorm.DB) {
 
 		var deliveries []model.Delivery
 		if err := db.Preload("Transaction").Preload("Transaction.Customer").
-			Preload("Driver").Preload("Vehicle").Preload("Items").Preload("DeliveryProgress").
+			Preload("Driver").Preload("Vehicle").
+			Preload("DeliveryDestinations").
+			Preload("DeliveryDestinations.items").
 			Where("driver_id = ?", id).
 			Find(&deliveries).Error; err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch deliveries"})
@@ -224,7 +232,7 @@ func (c *DeliveryController) UpdateDeliveryStatus(ctx *gin.Context) {
 		return
 	}
 
-	validStatuses := []string{"menunggu persetujuan", "disetujui", "ditolak", "dalam pengiriman", "selesai"}
+	validStatuses := []string{"menunggu persetujuan", "disetujui", "ditolak", "menunggu pengemudi", "dalam pengiriman", "selesai"}
 	isValid := false
 	for _, status := range validStatuses {
 		if body.DeliveryStatus == status {
@@ -277,7 +285,9 @@ func (c *DeliveryController) UpdateDeliveryStatus(ctx *gin.Context) {
 	completedCount := 0
 	total := len(deliveries)
 
+	fmt.Println("Deliveries ditemukan:", len(deliveries))
 	for _, d := range deliveries {
+		fmt.Println("Status pengiriman:", d.DeliveryStatus)
 		switch string(d.DeliveryStatus) {
 		case "disetujui":
 			approvedCount++
@@ -330,7 +340,7 @@ func (c *DeliveryController) GetHistoryDeliveries(ctx *gin.Context) {
 		Preload("Driver").
 		Preload("Vehicle").
 		Preload("Items").
-		Preload("DeliveryProgress").
+		Preload("DeliveryDestinations").
 		Where("driver_id = ? AND (delivery_status = ? OR delivery_status = ?)",
 			driverID,
 			"selesai",
@@ -354,7 +364,7 @@ func GetActiveDeliveriesByDriver(ctx *gin.Context) {
 		Preload("Driver").
 		Preload("Vehicle").
 		Preload("Items").
-		Preload("DeliveryProgress").
+		Preload("DeliveryDestinations").
 		Where("driver_id = ? AND (delivery_status = ? OR delivery_status = ?)",
 			driverID,
 			model.DeliveryStatusOnDelivery,

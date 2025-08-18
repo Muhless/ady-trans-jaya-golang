@@ -219,7 +219,7 @@ func DriversControllers(r *gin.Engine, db *gorm.DB) {
 			updatedDriver.Photo = existingDriver.Photo
 		}
 
-		// Cek apakah phone sudah digunakan driver lain
+		// Cek apakah nomor sudah digunakan driver lain
 		if updatedDriver.Phone != existingDriver.Phone {
 			var phoneExist model.Driver
 			if err := db.Where("phone = ? AND id != ?", updatedDriver.Phone, id).First(&phoneExist).Error; err == nil {

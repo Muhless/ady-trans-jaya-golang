@@ -1,2 +1,2 @@
 ALTER TABLE deliveries
-DROP COLUMN note TEXT;
+DROP COLUMN note;

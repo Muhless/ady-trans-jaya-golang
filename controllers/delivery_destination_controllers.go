@@ -16,53 +16,116 @@ type DeliveryDestinationControllers struct {
 	DB *gorm.DB
 }
 
-func (c *DeliveryDestinationControllers) CreateDestinations(ctx *gin.Context) {
-	var destinations []model.DeliveryDestinations
+func (c *DeliveryDestinationControllers) UploadPickupPhoto(ctx *gin.Context) {
+	c.uploadDeliveryDestinationPhoto(ctx, "pickup_photo_url", "pickup_time")
+}
 
-	if err := ctx.ShouldBindJSON(&destinations); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON format"})
+func (c *DeliveryDestinationControllers) UploadDeliveryPhoto(ctx *gin.Context) {
+	c.uploadDeliveryDestinationPhoto(ctx, "arrival_photo_url", "arrival_time")
+}
+
+type CreateDeliveryDestinationRequest struct {
+	DeliveryID        int        `json:"delivery_id" binding:"required"`
+	DeliveryStartTime *time.Time `json:"delivery_start_time" binding:"required"`
+}
+
+func (c *DeliveryDestinationControllers) GetDestinationByDeliveryID(ctx *gin.Context) {
+	deliveryID := ctx.Param("id")
+	var progresses []model.DeliveryDestination
+
+	if err := c.DB.Where("delivery_id = ?", deliveryID).Find(&progresses).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Gagal mengambil data progress",
+		})
 		return
 	}
 
-	for i, dest := range destinations {
-		if dest.DeliveryID == 0 || dest.Address == "" {
-			ctx.JSON(http.StatusBadRequest, gin.H{
-				"error": fmt.Sprintf("Invalid destination at index %d: delivery_id and address required", i),
-			})
-			return
-		}
-	}
-
-	// Simpan semua ke database
-	if err := db.DB.Create(&destinations).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create destinations"})
-		return
-	}
-
-	ctx.JSON(http.StatusCreated, gin.H{
-		"message":      "Destinations created successfully",
-		"destinations": destinations,
+	ctx.JSON(http.StatusOK, gin.H{
+		"data":    progresses,
+		"message": "Berhasil mengambil data progress",
 	})
 }
 
-func (c *DeliveryDestinationControllers) GetDestinationsByDeliveryID(ctx *gin.Context) {
-	deliveryIDStr := ctx.Param("id")
-	deliveryID, err := strconv.Atoi(deliveryIDStr)
+func (c *DeliveryDestinationControllers) CreateDeliveryDestination(ctx *gin.Context) {
+	var req CreateDeliveryDestinationRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var existing model.DeliveryDestination
+	if err := db.DB.Where("delivery_id = ?", req.DeliveryID).First(&existing).Error; err == nil {
+		ctx.JSON(http.StatusConflict, gin.H{"error": "Progress untuk pengiriman ini sudah dibuat"})
+		return
+	}
+
+	progress := model.DeliveryDestination{
+		DeliveryID:        req.DeliveryID,
+		DeliveryStartTime: req.DeliveryStartTime,
+	}
+
+	if err := db.DB.Create(&progress).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menyimpan progress"})
+		return
+	}
+
+	ctx.JSON(http.StatusCreated, gin.H{"message": "Progress pengiriman berhasil dibuat"})
+}
+
+func (c *DeliveryDestinationControllers) uploadDeliveryDestinationPhoto(ctx *gin.Context, field string, timeField string) {
+	id := ctx.Param("id")
+
+	var progress model.DeliveryDestination
+	if err := db.DB.First(&progress, id).Error; err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "Data not found"})
+		return
+	}
+
+	file, err := ctx.FormFile("photo")
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid delivery ID"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "No file uploaded"})
 		return
 	}
 
-	var destinations []model.DeliveryDestinations
-	if err := c.DB.
-		Where("delivery_id = ?", deliveryID).
-		Order("sequence ASC").
-		Find(&destinations).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get destinations"})
+	filename := fmt.Sprintf("%s_%d_%d.jpg", field, progress.ID, time.Now().Unix())
+	path := fmt.Sprintf("uploads/%s", filename)
+	if err := ctx.SaveUploadedFile(file, path); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Upload failed"})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, destinations)
+	url := fmt.Sprintf("/%s", path)
+
+	updates := map[string]interface{}{
+		field:        url,
+		timeField:    time.Now(),
+		"updated_at": time.Now(),
+	}
+
+	if err := db.DB.Model(&progress).Updates(updates).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Update failed"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Upload success", "url": url})
+	fmt.Println("File berhasil diupload:", filename)
+}
+
+func (c *DeliveryDestinationControllers) DeleteDeliveryDestination(ctx *gin.Context) {
+	id := ctx.Param("id")
+
+	var progress model.DeliveryDestination
+	if err := db.DB.First(&progress, id).Error; err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "Progress tidak ditemukan"})
+		return
+	}
+
+	if err := db.DB.Delete(&progress).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus progress"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Progress berhasil dihapus"})
 }
 
 func (c *DeliveryDestinationControllers) UploadArrivalPhoto(ctx *gin.Context) {
@@ -73,7 +136,7 @@ func (c *DeliveryDestinationControllers) UploadArrivalPhoto(ctx *gin.Context) {
 		return
 	}
 
-	var destination model.DeliveryDestinations
+	var destination model.DeliveryDestination
 	if err := db.DB.First(&destination, id).Error; err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"error": "Destination not found"})
 		return

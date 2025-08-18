@@ -45,7 +45,10 @@ func (c *TransactionController) GetTransactionByID(ctx *gin.Context) {
 	var transaction model.Transaction
 	if err := c.DB.
 		Preload("Customer").
-		Preload("Delivery").
+		Preload("Delivery.Driver").
+		Preload("Delivery.Vehicle").
+		Preload("Delivery.Items").
+		Preload("Delivery.DeliveryDestinations").
 		First(&transaction, id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			ctx.JSON(http.StatusNotFound, gin.H{
@@ -67,7 +70,10 @@ func (c *TransactionController) GetTransactionByID(ctx *gin.Context) {
 func (c *TransactionController) CreateTransaction(ctx *gin.Context) {
 	type CreateTransactionRequest struct {
 		model.Transaction
-		Deliveries []model.Delivery `json:"deliveries"`
+		Deliveries []struct {
+			model.Delivery
+			Items []model.DeliveryItem `json:"items"` // Tambahkan ini
+		} `json:"deliveries"`
 	}
 
 	var request CreateTransactionRequest
@@ -93,12 +99,24 @@ func (c *TransactionController) CreateTransaction(ctx *gin.Context) {
 		return
 	}
 
-	for _, delivery := range request.Deliveries {
+	for _, deliveryData := range request.Deliveries {
+		// Buat delivery
+		delivery := deliveryData.Delivery
 		delivery.TransactionID = request.Transaction.ID
 		if err := tx.Omit("Driver", "Vehicle").Create(&delivery).Error; err != nil {
 			tx.Rollback()
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save delivery data"})
 			return
+		}
+
+		// Buat items untuk delivery ini
+		for _, item := range deliveryData.Items {
+			item.DeliveryID = delivery.ID // Asumsi ada field DeliveryID di model DeliveryItem
+			if err := tx.Create(&item).Error; err != nil {
+				tx.Rollback()
+				ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save delivery item data"})
+				return
+			}
 		}
 	}
 
@@ -108,7 +126,7 @@ func (c *TransactionController) CreateTransaction(ctx *gin.Context) {
 	}
 
 	var result model.Transaction
-	if err := c.DB.Preload("Customer").Preload("Delivery").First(&result, request.Transaction.ID).Error; err != nil {
+	if err := c.DB.Preload("Customer").Preload("Delivery.Items").First(&result, request.Transaction.ID).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve created transaction with related data"})
 		return
 	}
@@ -119,83 +137,83 @@ func (c *TransactionController) CreateTransaction(ctx *gin.Context) {
 	})
 }
 
-func (c *TransactionController) UpdateTransaction(ctx *gin.Context) {
-	id := ctx.Param("id")
+// func (c *TransactionController) UpdateTransaction(ctx *gin.Context) {
+// 	id := ctx.Param("id")
 
-	type UpdateTransactionRequest struct {
-		model.Transaction
-		Deliveries []model.Delivery `json:"deliveries"`
-	}
+// 	type UpdateTransactionRequest struct {
+// 		model.Transaction
+// 		Deliveries []model.Delivery `json:"deliveries"`
+// 	}
 
-	var request UpdateTransactionRequest
-	if err := ctx.ShouldBindJSON(&request); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
+// 	var request UpdateTransactionRequest
+// 	if err := ctx.ShouldBindJSON(&request); err != nil {
+// 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+// 		return
+// 	}
 
-	var existingTransaction model.Transaction
-	if err := c.DB.First(&existingTransaction, id).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			ctx.JSON(http.StatusNotFound, gin.H{
-				"error": "Transaksi tidak ditemukan",
-			})
-			return
-		}
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Gagal mengambil data transaksi",
-		})
-		return
-	}
+// 	var existingTransaction model.Transaction
+// 	if err := c.DB.First(&existingTransaction, id).Error; err != nil {
+// 		if err == gorm.ErrRecordNotFound {
+// 			ctx.JSON(http.StatusNotFound, gin.H{
+// 				"error": "Transaksi tidak ditemukan",
+// 			})
+// 			return
+// 		}
+// 		ctx.JSON(http.StatusInternalServerError, gin.H{
+// 			"error": "Gagal mengambil data transaksi",
+// 		})
+// 		return
+// 	}
 
-	tx := c.DB.Begin()
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
-			fmt.Println("Recovered in UpdateTransaction:", r)
-		}
-	}()
+// 	tx := c.DB.Begin()
+// 	defer func() {
+// 		if r := recover(); r != nil {
+// 			tx.Rollback()
+// 			fmt.Println("Recovered in UpdateTransaction:", r)
+// 		}
+// 	}()
 
-	request.Transaction.ID = existingTransaction.ID
-	request.Transaction.TotalDelivery = len(request.Deliveries)
+// 	request.Transaction.ID = existingTransaction.ID
+// 	request.Transaction.TotalDelivery = len(request.Deliveries)
 
-	if err := tx.Model(&existingTransaction).Updates(request.Transaction).Error; err != nil {
-		tx.Rollback()
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update transaction data"})
-		return
-	}
+// 	if err := tx.Model(&existingTransaction).Updates(request.Transaction).Error; err != nil {
+// 		tx.Rollback()
+// 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update transaction data"})
+// 		return
+// 	}
 
-	if err := tx.Where("transaction_id = ?", existingTransaction.ID).Delete(&model.Delivery{}).Error; err != nil {
-		tx.Rollback()
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete old delivery data"})
-		return
-	}
+// 	if err := tx.Where("transaction_id = ?", existingTransaction.ID).Delete(&model.Delivery{}).Error; err != nil {
+// 		tx.Rollback()
+// 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete old delivery data"})
+// 		return
+// 	}
 
-	for _, delivery := range request.Deliveries {
-		delivery.ID = 0
-		delivery.TransactionID = existingTransaction.ID
-		if err := tx.Omit("Driver", "Vehicle").Create(&delivery).Error; err != nil {
-			tx.Rollback()
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save delivery data"})
-			return
-		}
-	}
+// 	for _, delivery := range request.Deliveries {
+// 		delivery.ID = 0
+// 		delivery.TransactionID = existingTransaction.ID
+// 		if err := tx.Omit("Driver", "Vehicle").Create(&delivery).Error; err != nil {
+// 			tx.Rollback()
+// 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save delivery data"})
+// 			return
+// 		}
+// 	}
 
-	if err := tx.Commit().Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to commit transaction"})
-		return
-	}
+// 	if err := tx.Commit().Error; err != nil {
+// 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to commit transaction"})
+// 		return
+// 	}
 
-	var result model.Transaction
-	if err := c.DB.Preload("Customer").Preload("Delivery").First(&result, existingTransaction.ID).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve updated transaction with related data"})
-		return
-	}
+// 	var result model.Transaction
+// 	if err := c.DB.Preload("Customer").Preload("Delivery").First(&result, existingTransaction.ID).Error; err != nil {
+// 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve updated transaction with related data"})
+// 		return
+// 	}
 
-	ctx.JSON(http.StatusOK, gin.H{
-		"message": "Transaction data successfully updated",
-		"data":    result,
-	})
-}
+// 	ctx.JSON(http.StatusOK, gin.H{
+// 		"message": "Transaction data successfully updated",
+// 		"data":    result,
+// 	})
+// }
 
 func (c *TransactionController) DeleteTransaction(ctx *gin.Context) {
 	id := ctx.Param("id")

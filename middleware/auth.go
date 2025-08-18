@@ -32,7 +32,6 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		// Ambil data dari claims
 		if claims, ok := token.Claims.(jwt.MapClaims); ok {
 			c.Set("userID", claims["id"])
 			c.Set("username", claims["username"])

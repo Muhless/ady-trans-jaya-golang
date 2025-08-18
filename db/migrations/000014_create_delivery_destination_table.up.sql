@@ -2,9 +2,9 @@ CREATE TABLE
           delivery_destinations (
                     id SERIAL PRIMARY KEY,
                     delivery_id INT NOT NULL,
-                    address TEXT,
-                    lat FLOAT NOT NULL,
-                    lng FLOAT NOT NULL,
+                    delivery_start_time TIMESTAMP,
+                    pickup_time TIMESTAMP,
+                    pickup_photo_url TEXT,
                     arrival_time TIMESTAMP,
                     arrival_photo_url TEXT,
                     status VARCHAR(15),
